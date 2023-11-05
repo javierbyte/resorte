@@ -1,0 +1,62 @@
+.main {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #000;
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+}
+.main > div {
+  border-radius: 1px;
+  background-color: #111;
+  box-shadow: inset #fff1 0 0 0 0.5px;
+  height: calc(100dvh - 8px);
+  position: relative;
+}
+
+div.cardContainer {
+  width: 300px;
+  z-index: 10;
+  background: #161616;
+  overflow-y: scroll;
+}
+
+.card {
+  overflow-y: scroll;
+  border: none;
+  background: transparent;
+  padding: 8px;
+}
+
+.selectContainer {
+  padding: 8px 0 0;
+  margin: 0 -4px;
+}
+
+.svgContainer,
+.fiberContainer {
+  width: 640px;
+  height: 640px;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 1200px) {
+  .svgContainer svg {
+    transform: scale(0.5);
+  }
+}
+
+@media (max-width: 1200px) {
+  .main {
+    flex-direction: column;
+  }
+  .main > div {
+    height: auto;
+    min-height: 320px;
+    width: 100%;
+  }
+}
