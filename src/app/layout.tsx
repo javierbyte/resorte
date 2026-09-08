@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 export const metadata: Metadata = {
   title: "Resorte - Create phone / book stands to 3D print in vase mode",
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body>{children}</body>
+      <GoogleAnalytics gaId="G-M2FT27FXS2" />
     </html>
   );
 }

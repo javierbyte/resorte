@@ -1,3 +1,5 @@
+import React from "react";
+
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 
@@ -19,7 +21,7 @@ export function Control({
   max = 100,
   suffix = "",
   step = 1,
-}: ControlProps): JSX.Element {
+}: ControlProps): React.JSX.Element {
   return (
     <div className="grid gap-2">
       <div className="flex items-center justify-between">

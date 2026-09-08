@@ -80,7 +80,7 @@ export function FiberRender({
 
   useEffect(() => {
     const svgResult = new SVGLoader().parse(svg);
-    const svgShape = svgResult.paths[0].toShapes(true);
+    const svgShape = svgResult.paths[0].toShapes();
     shapeSet(svgShape);
   }, [path]);
 
