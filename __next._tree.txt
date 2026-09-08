@@ -1,0 +1,3 @@
+:HL["/resorte/_next/static/chunks/3g52kdsaq_27y.css","style"]
+:HL["/resorte/_next/static/chunks/0435smz-__9om.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"r7FXB49ssfYCuDm6GiKFF"}
