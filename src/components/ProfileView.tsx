@@ -19,8 +19,6 @@ const INK = {
   soft: "rgba(255,255,255,0.28)",
   faint: "rgba(255,255,255,0.07)",
   ghost: "rgba(255,255,255,0.035)",
-  // INK.strong over the stand's fill, made opaque.
-  wall: "rgb(235,235,235)",
 };
 
 // World y points up, SVG y points down.
@@ -60,7 +58,7 @@ export function ProfileView({
 }) {
   const [ref, size] = useElementSize<HTMLDivElement>();
 
-  const { bounds, frame, contact, ghost, centerOfMass } = analysis;
+  const { bounds, frame, ghost, centerOfMass } = analysis;
 
   // Leave room around the frame for dimensions and labels.
   const frameW = Math.max(frame.maxX - frame.minX, MIN_EXTENT) * 1.35;
@@ -173,14 +171,6 @@ export function ProfileView({
             strokeWidth={px}
           />
           <path d={shapeToPath(walls)} fill={INK.strong} fillRule="evenodd" />
-          {/* contact: just under the table, overlapping the walls by half a
-              pixel so no seam shows */}
-          <path
-            d={`M${contact[0]} ${sy(ground) + px}H${contact[1]}`}
-            stroke={INK.wall}
-            strokeWidth={3 * px}
-            strokeLinecap="butt"
-          />
 
           {/* angle */}
           <g stroke={INK.mid} strokeWidth={px}>
