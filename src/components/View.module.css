@@ -1,0 +1,27 @@
+.canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.svgLabel {
+  fill: var(--fg);
+  font-family: var(--font-mono);
+}
+
+.scaleBar {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+.scaleBar span {
+  height: 5px;
+  border: 1px solid var(--muted);
+  border-top: none;
+}

@@ -1,194 +1,187 @@
-import type { FunctionPathType } from "@/components/designs/resorte";
-import { CreatePoligono, polar2cartesian } from "@/components/poligono";
+import type { Pair } from "polygon-clipping";
+
+import type {
+  Container,
+  Design,
+  Params,
+  PathFunction,
+} from "@/components/designs/types";
+import {
+  angleControl,
+  autoBack,
+  containerBackX,
+  containerCenter,
+  extremes,
+  nozzleControl,
+  rect,
+  rotatePoint,
+  rotateRings,
+  sectorRing,
+  smoothCorner,
+  toleranceControl,
+  union,
+  widthControl,
+} from "@/components/designs/shared";
+import { groundContact } from "@/lib/model";
+import { solidWall } from "@/lib/vase";
 
 const config = [
+  angleControl,
+  widthControl,
   {
-    key: "angle",
-    label: "Angle",
-    min: 0,
-    max: 90,
-    suffix: "°",
-    default: 60,
-    step: 1,
-    advanced: false,
-  },
-  {
-    key: "extrude",
-    label: "Holder Width (Extrusion)",
-    min: 10,
-    max: 200,
-    suffix: "mm",
-    default: 60,
-    advanced: false,
-  },
-  {
-    key: "holderDepth",
-    label: "Holder Depth",
-    min: 0,
-    max: 60,
-    suffix: "mm",
-    default: 9,
-    advanced: false,
-  },
-  {
-    key: "holderHeight",
-    label: "Holder Height",
-    min: 10,
-    max: 180,
-    suffix: "mm",
-    default: 50,
-    advanced: false,
-  },
-  {
-    key: "baseDepth",
-    label: "Base Depth",
-    min: 0,
-    max: 200,
-    suffix: "mm",
-    default: 100,
-    advanced: false,
-  },
-  {
-    key: "clipLenght",
-    label: "Clip Length",
-    min: 0,
-    max: 60,
-    suffix: "mm",
-    default: 3.5,
-    step: 0.5,
-    advanced: true,
-  },
-  {
-    key: "clipThickness",
-    label: "Clip Thickness",
-    min: 1.8,
-    max: 10,
-    step: 0.1,
-    suffix: "mm",
-    default: 1.8,
-    advanced: true,
-  },
-
-  {
-    key: "towerHeight",
-    label: "Tower Height",
-    min: 0,
-    max: 200,
-    step: 1,
-    suffix: "mm",
-    default: 10,
-    advanced: true,
-  },
-  {
-    key: "towerInset",
-    label: "Tower Inset",
+    key: "baseHeight",
+    label: "Base height",
     min: 0,
     max: 200,
     step: 1,
     suffix: "mm",
     default: 0,
-    advanced: true,
+    hint: "Lifts the holder off the table.",
   },
   {
-    key: "printExtrusionWidth",
-    label: "Print Extrusion Width",
-    min: 0.6,
-    max: 2,
-    step: 0.05,
+    key: "baseDepth",
+    label: "Base depth",
+    min: 0,
+    max: 400,
+    step: 1,
     suffix: "mm",
-    default: 0.87,
-    advanced: true,
+    default: 100,
+    auto: autoBaseDepth,
+    hint: "Auto centers the base under the container, for the most balance.",
   },
+  {
+    key: "back",
+    label: "Back height",
+    min: 10,
+    max: 400,
+    step: 1,
+    suffix: "mm",
+    default: 50,
+    auto: autoBackHeight,
+    hint: "Auto leaves 61.8% of the container height resting flat on the back.",
+  },
+  {
+    key: "lip",
+    label: "Lip height",
+    min: 0,
+    max: 60,
+    step: 0.5,
+    suffix: "mm",
+    default: 0,
+    hint: "How far the front lip rises above the pocket floor.",
+  },
+  {
+    key: "rounding",
+    label: "Corner rounding",
+    min: 0,
+    max: 40,
+    step: 1,
+    suffix: "mm",
+    default: 12,
+    hint: "Smooths the back and bottom corners with continuous curvature.",
+  },
+  toleranceControl,
+  nozzleControl,
 ] as const;
 
-const path: FunctionPathType<typeof config> = function (params) {
-  const {
-    holderHeight,
-    holderDepth,
-    angle,
-    clipLenght,
-    clipThickness,
-    baseDepth,
-    towerHeight,
-    towerInset,
-    printExtrusionWidth,
-  } = params;
+// The rotated pocket that holds the container, before the base is added.
+function holder(params: Record<string, number>, container: Container) {
+  const { back, angle, lip, nozzle, tolerance } = params;
 
-  // device
-  const poligono = CreatePoligono();
+  // The lip is a solid fin, and the bends are rounded to the same radius so
+  // the back bend sits one solid wall under the seat.
+  const wall = solidWall(nozzle);
+  const pocket = container.thickness + tolerance;
 
-  // back of the device
-  // devicePolygon.pushSquare([holderHeight, clipThickness]);
-  poligono.pushRing([
-    [holderHeight, clipThickness],
-    [0, 0],
-    [0, clipThickness],
-  ]);
-
-  // base of the device
-  poligono.pushSquare(
-    [clipThickness, holderDepth + clipThickness + printExtrusionWidth / 2],
-    [0, 0]
+  const rings = rotateRings(
+    [
+      // back
+      [
+        [back, wall],
+        [wall, 0],
+        [wall, wall],
+      ],
+      // floor
+      rect([wall, pocket], [0, wall]),
+      ...(lip > 0 ? [rect([lip, wall], [wall, pocket + wall])] : []),
+      // Rounded bends, so they stay one solid wall thick. The lowest point of
+      // the back bend sets the table, so it gets an exact vertex.
+      sectorRing([wall, wall], wall, 180, 270, 270 - angle),
+      sectorRing([wall, pocket + wall], wall, 90, 180),
+    ],
+    angle
   );
 
-  // front clip
-  poligono.pushRing([
-    [0, holderDepth + clipThickness + printExtrusionWidth * 2],
-    [
-      clipThickness + clipLenght,
-      holderDepth + clipThickness + printExtrusionWidth,
-    ],
-    [clipThickness + clipLenght, holderDepth + clipThickness],
-    [0, holderDepth + clipThickness],
-  ]);
+  const seat = { origin: rotatePoint([wall, wall], angle), angle };
 
-  // ROTATE
-  poligono.rotate(angle);
+  return { rings, seat, ...extremes(union(rings)) };
+}
 
-  // BASE
-  const rightPoint = poligono.getMinMax().rightPoint;
-  const bottomPoint = poligono.getMinMax().bottomPoint;
+// Leaves 61.8% of the container height resting flat on the back, after the
+// bend and the top corner's rounding.
+function autoBackHeight(container: Container, params: Record<string, number>) {
+  const contact = autoBack(container);
+  if (contact == null) return null;
 
-  // devicePolygon.pushRing([
-  //   bottomPoint,
-  //   rightPoint,
-  //   [bottomPoint[0] + baseDepth, bottomPoint[1]],
-  //   bottomPoint,
-  // ]);
-
-  const insetChin = polar2cartesian({
-    distance: towerInset,
-    angle: (angle / 360) * Math.PI * 2,
-  });
-
-  const pointInsetChin: [number, number] = [
-    bottomPoint[0] + insetChin.x,
-    bottomPoint[1] + insetChin.y,
+  const { right, bottom } = holder(params, container);
+  const backCorner: Pair = [
+    bottom[0] + params.baseDepth,
+    bottom[1] - params.baseHeight,
   ];
+  const backEdge = Math.hypot(
+    backCorner[0] - right[0],
+    backCorner[1] - right[1]
+  );
+  // smoothCorner caps the rounding at half of each edge.
+  const trim = Math.min(params.rounding, contact, backEdge / 2);
+  return contact + solidWall(params.nozzle) + trim;
+}
 
-  poligono.pushRing([
-    bottomPoint,
-    rightPoint,
-    // [bottomPoint[0] + baseDepth, bottomPoint[1] - towerHeight + printExtrusionWidth],
-    [bottomPoint[0] + baseDepth, bottomPoint[1] - towerHeight],
-    [pointInsetChin[0], bottomPoint[1] - towerHeight],
-    pointInsetChin,
-    bottomPoint,
+// Centers the base's contact with the table under the container's center of
+// mass. Rounding shifts the contact, so measure the real shape and correct.
+function autoBaseDepth(container: Container, params: Record<string, number>) {
+  const { seat, bottom } = holder(params, container);
+  const center = containerCenter(seat, container);
+  if (!center) return null;
+
+  let depth = containerBackX(seat, container)! - bottom[0];
+  for (let i = 0; i < 3; i++) {
+    const next = { ...params, baseDepth: depth } as Params<typeof config>;
+    const { shape } = path(next, container);
+    const [front, back] = groundContact(shape);
+    depth = Math.max(0, depth + 2 * center[0] - front - back);
+  }
+  return depth;
+}
+
+const path: PathFunction<typeof config> = function (params, container) {
+  const { baseDepth, baseHeight, rounding } = params;
+  const { rings, seat, left, right, bottom } = holder(params, container);
+
+  const ground = bottom[1] - baseHeight;
+  const backCorner: Pair = [bottom[0] + baseDepth, ground];
+  const frontCorner: Pair = [left[0], ground];
+  const underBottom: Pair = [bottom[0], ground];
+
+  let shape = union([
+    ...rings,
+    // back triangle
+    [bottom, right, backCorner, underBottom],
+    // front triangle, with a vertical wall from the lip down to the table
+    [left, bottom, underBottom, frontCorner],
   ]);
+  shape = smoothCorner(shape, right, rounding);
+  shape = smoothCorner(shape, backCorner, rounding);
+  shape = smoothCorner(shape, frontCorner, rounding);
 
-  // // LEFT SIDE
-  // const leftPoint = devicePolygon.getMinMax().leftPoint;
-  // devicePolygon.pushRing([
-  //   bottomPoint,
-  //   [leftPoint[0] + 0, leftPoint[1] + 0.0001],
-  //   [(leftPoint[0] + bottomPoint[0]) / 2, bottomPoint[1]],
-  //   bottomPoint,
-  // ]);
-
-  return poligono.getUnion();
+  return { shape, seat };
 };
 
-export default {
+const triangle: Design<typeof config> = {
+  name: "Triangle",
+  description: "Two hollow triangles. Sturdy, low profile.",
   config,
   path,
 };
+
+export default triangle;

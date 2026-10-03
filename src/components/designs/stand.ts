@@ -1,192 +1,200 @@
-import type { FunctionPathType } from "@/components/designs/resorte";
-import { CreatePoligono } from "@/components/poligono";
+import type { Pair } from "polygon-clipping";
+
+import type {
+  Container,
+  Design,
+  PathFunction,
+  Seat,
+} from "@/components/designs/types";
+import {
+  angleControl,
+  autoBack,
+  containerBackX,
+  nozzleControl,
+  rect,
+  rotatePoint,
+  rotateRings,
+  sectorRing,
+  toRadians,
+  toleranceControl,
+  union,
+  widthControl,
+} from "@/components/designs/shared";
+import { solidWall } from "@/lib/vase";
 
 const config = [
-  {
-    key: "angle",
-    label: "Angle",
-    min: 0,
-    max: 90,
-    suffix: "°",
-    default: 60,
-    step: 1,
-    advanced: false,
-  },
-  {
-    key: "extrude",
-    label: "Holder Width (Extrusion)",
-    min: 10,
-    max: 200,
-    suffix: "mm",
-    default: 60,
-    step: 1,
-    advanced: false,
-  },
-  {
-    key: "pocketDepth",
-    label: "Pocket Depth",
-    min: 0,
-    max: 60,
-    suffix: "mm",
-    default: 9,
-    step: 1,
-    advanced: false,
-  },
+  angleControl,
+  widthControl,
   {
     key: "baseHeight",
-    label: "Base Thickness",
-    min: 2,
-    max: 30,
-    suffix: "mm",
-    default: 2,
+    label: "Base height",
+    min: minBaseHeight,
+    max: 220,
     step: 1,
-    advanced: true,
+    suffix: "mm",
+    default: 50,
+    hint: "Height of the tower holding the pocket.",
   },
   {
     key: "baseDepth",
-    label: "Base Length",
+    label: "Base depth",
     min: 6,
     max: 180,
+    step: 1,
     suffix: "mm",
     default: 50,
-    step: 1,
-    advanced: false,
+    auto: autoBaseDepth,
+    hint: "Auto reaches back as far as the container.",
   },
   {
-    key: "towerHeight",
-    label: "Tower Height",
-    min: 5,
-    max: 220,
-    suffix: "mm",
-    default: 50,
+    key: "back",
+    label: "Back height",
+    min: 10,
+    max: 180,
     step: 1,
-    advanced: false,
+    suffix: "mm",
+    default: 60,
+    auto: autoBack,
   },
   {
     key: "towerThickness",
-    label: "Tower Thickness",
+    label: "Tower thickness",
     min: 6,
     max: 30,
+    step: 1,
     suffix: "mm",
     default: 12,
-    step: 1,
-    advanced: false,
+    advanced: true,
   },
   {
     key: "towerPosition",
-    label: "Tower Position",
+    label: "Tower position",
     min: 0,
     max: 100,
+    step: 1,
     suffix: "%",
     default: 50,
-    step: 1,
-    advanced: false,
-  },
-  {
-    key: "deviceHolderHeight",
-    label: "Pocket Back Height",
-    min: 50,
-    max: 180,
-    suffix: "mm",
-    default: 60,
-    step: 1,
     advanced: true,
   },
   {
-    key: "deviceHolderTongue",
-    label: "Clip Length",
+    key: "plate",
+    label: "Base thickness",
+    min: (params: Record<string, number>) => solidWall(params.nozzle),
+    max: 30,
+    step: 0.1,
+    suffix: "mm",
+    default: 2,
+    auto: (_: Container, params: Record<string, number>) =>
+      solidWall(params.nozzle),
+    advanced: true,
+    hint: "Auto is two lines, printed solid. Thicker prints hollow.",
+  },
+  {
+    key: "lip",
+    label: "Lip height",
     min: 0,
     max: 60,
+    step: 0.5,
     suffix: "mm",
     default: 2,
-    step: 1,
-    advanced: true,
+    hint: "How far the front lip rises above the pocket floor.",
   },
-  {
-    key: "deviceHolderTongueThickness",
-    label: "Clip Thickness",
-    min: 1,
-    max: 30,
-    suffix: "mm",
-    default: 2,
-    step: 1,
-    advanced: true,
-  },
+  toleranceControl,
+  nozzleControl,
 ] as const;
 
-const path: FunctionPathType<typeof config> = function (params) {
-  const {
-    deviceHolderHeight,
-    baseHeight,
-    baseDepth,
-    pocketDepth,
+// The holder rotates about the top of the tower, so its front swings down.
+// Its lowest point is the front-bottom corner of the back.
+function holderDrop(params: Record<string, number>) {
+  const { back, angle, towerThickness } = params;
+  const rad = toRadians(angle);
+  return (back / 2) * Math.sin(rad) + towerThickness * Math.cos(rad);
+}
+
+// Keeps the holder one solid wall clear of the base plate, so the two never
+// merge into a shape the vase path can't print cleanly.
+function minBaseHeight(params: Record<string, number>) {
+  const { plate, nozzle } = params;
+  return Math.ceil(plate + solidWall(nozzle) + holderDrop(params));
+}
+
+function seatOnTower(towerTop: Pair, params: Record<string, number>): Seat {
+  const { back, angle, nozzle } = params;
+  const wall = solidWall(nozzle);
+  return {
+    origin: rotatePoint(
+      [towerTop[0] - back / 2 + wall, towerTop[1]],
+      angle,
+      towerTop
+    ),
     angle,
-    towerHeight,
+  };
+}
+
+// Puts the back of the plate under the back of the container. The tower moves
+// as the plate grows: depth = p * (depth - towerThickness) + reach.
+function autoBaseDepth(container: Container, params: Record<string, number>) {
+  const { baseHeight, towerThickness, towerPosition } = params;
+  const p = towerPosition / 100;
+  if (!container.height || p >= 1) return null;
+
+  const seat = seatOnTower([0, baseHeight], params);
+  const reach = containerBackX(seat, container)!;
+  return (reach - p * towerThickness) / (1 - p);
+}
+
+const path: PathFunction<typeof config> = function (params, container) {
+  const {
+    back,
+    plate,
+    baseDepth,
+    angle,
+    baseHeight,
     towerThickness,
-    deviceHolderTongue,
-    deviceHolderTongueThickness,
+    lip,
+    nozzle,
     towerPosition,
+    tolerance,
   } = params;
 
-  const poligono = CreatePoligono();
+  // The pocket floor and the lip are solid fins, exactly two lines.
+  const wall = solidWall(nozzle);
+  const pocket = container.thickness + tolerance;
 
-  // base
-  poligono.pushSquare([baseDepth, baseHeight]);
+  const towerX = (baseDepth - towerThickness) * (towerPosition / 100);
+  const towerTop: Pair = [towerX, baseHeight];
+  const backX = towerX - back / 2;
+  const bend: Pair = [backX + wall, baseHeight + pocket];
 
-  // tower
-
-  const towerDistanceFromBaseDepth =
-    (baseDepth - towerThickness) * (1 - towerPosition / 100);
-
-  poligono.pushSquare(
-    [towerThickness, towerHeight],
-    [baseDepth - towerDistanceFromBaseDepth - towerThickness, 0]
-  );
-
-  const towerTop: [number, number] = [
-    baseDepth - towerDistanceFromBaseDepth - towerThickness,
-    towerHeight,
-  ];
-
-  // device
-  const deviceBackThickness = towerThickness;
-  const devicePolygon = CreatePoligono();
-  const deviceHolderThhickness = towerThickness;
-
-  // back of the device
-  devicePolygon.pushSquare(
-    [deviceHolderHeight, deviceHolderThhickness],
-    [towerTop[0] - deviceHolderHeight / 2, towerTop[1] - deviceHolderThhickness]
-  );
-
-  // base of the device
-  devicePolygon.pushSquare(
+  const holder = rotateRings(
     [
-      deviceHolderTongueThickness,
-      pocketDepth + deviceHolderTongueThickness + deviceBackThickness,
+      // back
+      rect([back, towerThickness], [backX, baseHeight - towerThickness]),
+      // floor
+      rect([wall, pocket + towerThickness], [backX, baseHeight - towerThickness]),
+      ...(lip > 0 ? [rect([lip, wall], bend)] : []),
+      // Rounded bend, so it stays one solid wall thick.
+      sectorRing(bend, wall, 90, 180),
     ],
-    [towerTop[0] - deviceHolderHeight / 2, towerTop[1] - deviceBackThickness]
+    angle,
+    towerTop
   );
 
-  // front of the device
-  devicePolygon.pushSquare(
-    [
-      deviceHolderTongueThickness + deviceHolderTongue,
-      deviceHolderTongueThickness,
-    ],
-    [towerTop[0] - deviceHolderHeight / 2, towerTop[1] + pocketDepth]
-  );
-
-  devicePolygon.rotate(angle, [towerTop[0], towerTop[1]]);
-
-  const finalPolygon = CreatePoligono();
-  finalPolygon.pushRing(poligono.getUnion()[0][0]);
-  finalPolygon.pushRing(devicePolygon.getUnion()[0][0]);
-
-  return finalPolygon.getUnion();
+  return {
+    shape: union([
+      rect([baseDepth, plate]),
+      rect([towerThickness, baseHeight], [towerX, 0]),
+      ...holder,
+    ]),
+    seat: seatOnTower(towerTop, params),
+  };
 };
 
-export default {
+const stand: Design<typeof config> = {
+  name: "Stand",
+  description: "Pocket on a tower. Light, open look.",
   config,
   path,
 };
+
+export default stand;

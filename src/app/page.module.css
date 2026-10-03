@@ -1,62 +1,306 @@
 .main {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  background: #000;
+  display: grid;
+  grid-template-columns: 340px 1fr 1fr;
+  grid-template-areas: "sidebar profile model";
+  gap: 1px;
   height: 100dvh;
-  width: 100vw;
+  background: var(--line);
   overflow: hidden;
 }
-.main > div {
-  border-radius: 1px;
-  background-color: #111;
-  box-shadow: inset #fff1 0 0 0 0.5px;
-  height: calc(100dvh - 8px);
-  position: relative;
+
+.main > * {
+  background: var(--bg);
+  min-width: 0;
+  min-height: 0;
 }
 
-div.cardContainer {
-  width: 300px;
-  z-index: 10;
-  background: #161616;
-  overflow-y: scroll;
-}
+/* Sidebar */
 
-.card {
-  overflow-y: scroll;
-  border: none;
-  background: transparent;
-  padding: 8px;
-}
-
-.selectContainer {
-  padding: 8px 0 0;
-  margin: 0 -4px;
-}
-
-.svgContainer,
-.fiberContainer {
-  width: 640px;
-  height: 640px;
+.sidebar {
+  grid-area: sidebar;
+  overflow-y: auto;
   display: flex;
-  flex: 1;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
 }
 
-@media (max-width: 1200px) {
-  .svgContainer svg {
-    transform: scale(0.5);
-  }
+.header {
+  padding: 20px 20px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.header h1 {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.header p {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.section {
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.section h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.section h2 span {
+  color: var(--muted);
+}
+
+.diagram {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+  border: 1px solid var(--line);
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
+.diagram svg {
+  max-height: 140px;
+}
+
+.fields {
+  display: grid;
+  gap: 18px;
+}
+
+.details summary {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+  padding: 4px 0;
+}
+.details summary::-webkit-details-marker {
+  display: none;
+}
+.details summary::after {
+  content: "+";
+}
+.details[open] summary::after {
+  content: "−";
+}
+.details summary:hover {
+  color: var(--fg);
+}
+.details[open] > :not(summary) {
+  margin-top: 14px;
+}
+
+.warnings {
+  display: grid;
+  gap: 8px;
+}
+.warnings li {
+  position: relative;
+  padding: 8px 10px 8px 28px;
+  border: 1px dashed var(--fg);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.warnings li::before {
+  content: "!";
+  position: absolute;
+  left: 10px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.download {
+  height: 40px;
+  background: var(--fg);
+  color: var(--bg);
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.download:hover {
+  background: #d4d4d4;
+}
+.download:focus-visible {
+  outline: 1px solid var(--fg);
+  outline-offset: 3px;
+}
+
+.filename {
+  margin-top: -8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.notes {
+  display: grid;
+  gap: 8px;
+  padding-left: 18px;
+  list-style: decimal;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.notes strong {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.footer {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.footer a:hover {
+  color: var(--fg);
+}
+
+/* Views */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+}
+.profile {
+  grid-area: profile;
+}
+.model {
+  grid-area: model;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+}
+.panelHeader span {
+  color: var(--muted);
+}
+.panelHeader em {
+  margin-left: auto;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--faint);
+}
+
+.panelBody {
+  position: relative;
+  flex: 1;
+}
+
+.titleBlock {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, auto));
+  border-top: 1px solid var(--line);
+}
+.titleBlock > div {
+  padding: 10px 16px 12px;
+  border-left: 1px solid var(--line);
+}
+.titleBlock > div:first-child {
+  border-left: none;
+}
+.titleBlock dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.titleBlock dd {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @media (max-width: 1200px) {
   .main {
-    flex-direction: column;
+    grid-template-columns: 320px 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+      "sidebar profile"
+      "sidebar model";
   }
-  .main > div {
+}
+
+@media (max-width: 720px) {
+  .main {
+    display: flex;
+    flex-direction: column;
     height: auto;
-    min-height: 320px;
-    width: 100%;
+    overflow: visible;
+  }
+
+  .profile {
+    order: 0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    height: 46dvh;
+    border-bottom: 1px solid var(--line);
+  }
+  .sidebar {
+    order: 1;
+    overflow: visible;
+  }
+  .model {
+    order: 2;
+    height: 80vw;
+    border-top: 1px solid var(--line);
+  }
+
+  .panelHeader {
+    padding: 10px 16px;
+  }
+  .titleBlock {
+    grid-template-columns: 1fr 1fr;
+  }
+  .titleBlock > div:nth-child(odd) {
+    border-left: none;
+  }
+  .titleBlock > div:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+  .titleBlock > div {
+    padding: 6px 10px 8px;
+  }
+  .titleBlock dd {
+    font-size: 11px;
   }
 }
