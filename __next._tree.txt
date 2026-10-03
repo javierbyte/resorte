@@ -1,3 +1,5 @@
-:HL["/resorte/_next/static/chunks/3g52kdsaq_27y.css","style"]
-:HL["/resorte/_next/static/chunks/0435smz-__9om.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"r7FXB49ssfYCuDm6GiKFF"}
+:HL["/resorte/_next/static/chunks/0vsj2ssppbvw9.css","style"]
+:HL["/resorte/_next/static/media/797e433ab948586e-s.p.0r6juujl39pe6.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/resorte/_next/static/media/caa3a2e1cccd8315-s.p.0wgildi0cnwt9.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/resorte/_next/static/chunks/24dhw7_bvcrak.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"vL-YBZ5Tanw9_UeBsGOPU"}
